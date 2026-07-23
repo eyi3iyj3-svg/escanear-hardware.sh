@@ -79,36 +79,49 @@ for disk in /sys/block/*; do
 done
 
 # 9, 10, 11, 12. Componentes PCI (GPU, Wi-Fi, Audio, USB)
-if command -v lspci &> /dev/null; then
-    while read -r line; do
-        pci_id=$(echo "$line" | grep -o '\[....:....\]' | tail -n1)
-        if echo "$line" | grep -qE -i "vga|3d|display"; then
-            add_row "Grafica (GPU)" "$(echo "$line" | cut -d':' -f3-)" "Controlador de Video" "${pci_id:-N/A}"
-        elif echo "$line" | grep -qE -i "network|wireless|ethernet|net"; then
-            add_row "Red / Wi-Fi" "$(echo "$line" | cut -d':' -f3-)" "Tarjeta de Red" "${pci_id:-N/A}"
-        elif echo "$line" | grep -qE -i "audio|sound"; then
-            add_row "Audio" "$(echo "$line" | cut -d':' -f3-)" "Dispositivo de Sonido" "${pci_id:-N/A}"
-        elif echo "$line" | grep -qE -i "usb"; then
-            add_row "Puerto USB" "$(echo "$line" | cut -d':' -f3-)" "Controlador USB" "${pci_id:-N/A}"
-        fi
-    done < <(lspci -nn 2>/dev/null)
-else
-    for pci_dev in /sys/bus/pci/devices/*; do
-        if [ -f "$pci_dev/vendor" ] && [ -f "$pci_dev/device" ]; then
-            v_id=$(cat "$pci_dev/vendor" | sed 's/0x//')
-            d_id=$(cat "$pci_dev/device" | sed 's/0x//')
-            class=$(cat "$pci_dev/class" 2>/dev/null)
-            pci_str="[$v_id:$d_id]"
-            
-            if [[ "$class" =~ ^0x03 ]]; then
-                add_row "Grafica (GPU)" "Dispositivo GPU" "Controlador de Video" "$pci_str"
-            elif [[ "$class" =~ ^0x02 ]]; then
-                add_row "Red / Wi-Fi" "Dispositivo Red" "Tarjeta de Red" "$pci_str"
-            elif [[ "$class" =~ ^0x04 ]]; then
-                add_row "Audio" "Dispositivo Audio" "Dispositivo de Sonido" "$pci_str"
-            elif [[ "$class" =~ ^0x0c03 ]]; then
-                add_row "Puerto USB" "Controlador USB" "Puerto de Entrada/Salida" "$pci_str"
+LSPCI_BIN=""
+for path in lspci /usr/bin/lspci /sbin/lspci /usr/sbin/lspci; do
+    if command -v "$path" &>/dev/null || [ -x "$path" ]; then
+        LSPCI_BIN="$path"
+        break
+    fi
+done
+
+if [ -n "$LSPCI_BIN" ]; then
+    LSPCI_OUT=$("$LSPCI_BIN" -nn 2>/dev/null)
+    
+    if [ -n "$LSPCI_OUT" ]; then
+        while IFS= read -r line; do
+            pci_id=$(echo "$line" | grep -oE '\[[0-9a-fA-F]{4}:[0-9a-fA-F]{4}\]' | tail -n1)
+            dev_name=$(echo "$line" | sed -E 's/^[^:]*:[^:]*:[ ]*//' | sed -E 's/ \[[0-9a-fA-F]{4}:[0-9a-fA-F]{4}\].*//')
+
+            if echo "$line" | grep -qE -i "vga|3d|display"; then
+                add_row "Grafica (GPU)" "$dev_name" "Controlador de Video" "${pci_id:-N/A}"
+            elif echo "$line" | grep -qE -i "network|wireless|ethernet|net"; then
+                add_row "Red / Wi-Fi" "$dev_name" "Tarjeta de Red" "${pci_id:-N/A}"
+            elif echo "$line" | grep -qE -i "audio|sound"; then
+                add_row "Audio" "$dev_name" "Dispositivo de Sonido" "${pci_id:-N/A}"
+            elif echo "$line" | grep -qE -i "usb"; then
+                add_row "Puerto USB" "$dev_name" "Controlador USB" "${pci_id:-N/A}"
             fi
+        done <<< "$LSPCI_OUT"
+    fi
+else
+    # Mapeo directo si lspci no existe
+    for dev_dir in /sys/bus/pci/devices/*; do
+        [ -d "$dev_dir" ] || continue
+        if [ -f "$dev_dir/vendor" ] && [ -f "$dev_dir/device" ]; then
+            v_id=$(cat "$dev_dir/vendor" 2>/dev/null | sed 's/0x//')
+            d_id=$(cat "$dev_dir/device" 2>/dev/null | sed 's/0x//')
+            class=$(cat "$dev_dir/class" 2>/dev/null)
+            pci_str="[$v_id:$d_id]"
+
+            case "$class" in
+                0x03*) add_row "Grafica (GPU)" "Dispositivo GPU" "Controlador de Video" "$pci_str" ;;
+                0x02*) add_row "Red / Wi-Fi" "Dispositivo Red" "Tarjeta de Red" "$pci_str" ;;
+                0x04*) add_row "Audio" "Dispositivo Audio" "Dispositivo de Sonido" "$pci_str" ;;
+                0x0c03*) add_row "Puerto USB" "Controlador USB" "Puerto USB" "$pci_str" ;;
+            esac
         fi
     done
 fi
