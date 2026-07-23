@@ -7,3 +7,6 @@ Herramienta ultraligera de un solo clic que extrae la tabla completa de componen
 2. Abre la terminal en la carpeta donde lo descargaste y dale permisos de ejecución:
    ```bash
    chmod +x escanear-hardware.sh
+#Ejecútalo con el siguiente comando:
+```bash
+./escanear-hardware.sh
