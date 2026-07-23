@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # ====================================================================
-# Escáner  de Hardware para Linux
-# Compatible con cualquier distribución (Debian, Arch,etc.)
+# Escáner de Hardware y Sistema para Linux
 # ====================================================================
 
 TABLE_DATA=""
@@ -15,7 +14,7 @@ add_row() {
 add_row "Componente" "Nombre / Modelo" "Descripcion" "ID / Version / Fecha"
 add_row "----------" "---------------" "-----------" "--------------------"
 
-# 1. Distribución de Linux (Lectura universal de /etc/*release)
+# 1. Distribución de Linux
 if [ -f /etc/os-release ]; then
     DISTRO=$(grep -E "^PRETTY_NAME=" /etc/os-release | cut -d'=' -f2 | tr -d '"')
 elif [ -f /etc/redhat-release ]; then
@@ -45,7 +44,7 @@ BIOS_VER=$(cat /sys/class/dmi/id/bios_version 2>/dev/null)
 BIOS_DATE=$(cat /sys/class/dmi/id/bios_date 2>/dev/null)
 add_row "BIOS / UEFI" "${BIOS_VER:-Desconocido}" "Firmware principal del sistema" "${BIOS_DATE:-N/A}"
 
-# 6. Procesador (CPU - Lectura directa de /proc/cpuinfo)
+# 6. Procesador (CPU)
 CPU_NAME=$(grep -m1 'model name' /proc/cpuinfo 2>/dev/null | cut -d':' -f2 | sed 's/^[ \t]*//')
 if [ -z "$CPU_NAME" ]; then
     CPU_NAME=$(grep -m1 'Hardware' /proc/cpuinfo 2>/dev/null | cut -d':' -f2 | sed 's/^[ \t]*//')
@@ -53,7 +52,7 @@ fi
 CPU_THREADS=$(grep -c '^processor' /proc/cpuinfo 2>/dev/null)
 add_row "Procesador" "${CPU_NAME:-Procesador Generico}" "${CPU_THREADS:-1} Hilos logicos" "-"
 
-# 7. Memoria RAM (Lectura directa de /proc/meminfo)
+# 7. Memoria RAM
 MEM_KB=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
 if [ -n "$MEM_KB" ]; then
     RAM_TOTAL=$(awk "BEGIN {printf \"%.2f GB\", $MEM_KB/1048576}")
@@ -62,7 +61,7 @@ else
 fi
 add_row "Memoria RAM" "$RAM_TOTAL Total" "Memoria de Trabajo" "-"
 
-# 8. Almacenamiento (Discos leyendo /sys/block)
+# 8. Almacenamiento (Discos)
 for disk in /sys/block/*; do
     dev=$(basename "$disk")
     if [[ "$dev" =~ ^(loop|ram|zram|sr) ]]; then continue; fi
@@ -81,8 +80,7 @@ done
 
 # 9, 10, 11, 12. Componentes PCI (GPU, Wi-Fi, Audio, USB)
 if command -v lspci &> /dev/null; then
-    # Método preferido si lspci está presente
-    lspci -nn | while read -r line; do
+    while read -r line; do
         pci_id=$(echo "$line" | grep -o '\[....:....\]' | tail -n1)
         if echo "$line" | grep -qE -i "vga|3d|display"; then
             add_row "Grafica (GPU)" "$(echo "$line" | cut -d':' -f3-)" "Controlador de Video" "${pci_id:-N/A}"
@@ -93,9 +91,8 @@ if command -v lspci &> /dev/null; then
         elif echo "$line" | grep -qE -i "usb"; then
             add_row "Puerto USB" "$(echo "$line" | cut -d':' -f3-)" "Controlador USB" "${pci_id:-N/A}"
         fi
-    done
+    done < <(lspci -nn 2>/dev/null)
 else
-    # Respaldo nativo si lspci NO está instalado (Lectura directa de /sys/bus/pci)
     for pci_dev in /sys/bus/pci/devices/*; do
         if [ -f "$pci_dev/vendor" ] && [ -f "$pci_dev/device" ]; then
             v_id=$(cat "$pci_dev/vendor" | sed 's/0x//')
@@ -103,7 +100,6 @@ else
             class=$(cat "$pci_dev/class" 2>/dev/null)
             pci_str="[$v_id:$d_id]"
             
-            # Clasificación por clase PCI
             if [[ "$class" =~ ^0x03 ]]; then
                 add_row "Grafica (GPU)" "Dispositivo GPU" "Controlador de Video" "$pci_str"
             elif [[ "$class" =~ ^0x02 ]]; then
@@ -117,7 +113,7 @@ else
     done
 fi
 
-# 13. Batería (si aplica)
+# 13. Batería
 BAT_PATH=$(ls -d /sys/class/power_supply/BAT* 2>/dev/null | head -n1)
 if [ -n "$BAT_PATH" ]; then
     BAT_CAP=$(cat "$BAT_PATH/capacity" 2>/dev/null)
@@ -125,7 +121,7 @@ if [ -n "$BAT_PATH" ]; then
     add_row "Bateria" "Bateria Integrada" "Carga actual: ${BAT_CAP}%" "${BAT_STAT:-N/A}"
 fi
 
-# Formateador de tabla nativo en AWK (Independiente de la herramienta 'column')
+# Formateador nativo en AWK
 echo -e "$TABLE_DATA" | awk -F'|' '
 {
     for (i=1; i<=NF; i++) {
