@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# ====================================================================
+# ESCÁNER DE HARDWARE PROFUNDO (BARE METAL)
+# Diseñado para ejecutarse en entornos mínimos como SystemRescue
+# ====================================================================
+
+# Nombre del archivo de reporte final
+REPORT_FILE="reporte_hardware_completo.txt"
+
+# Crear o limpiar el archivo de reporte
+echo "========================================" > "$REPORT_FILE"
+echo "REPORTE DE HARDWARE PROFUNDO (BARE METAL)" >> "$REPORT_FILE"
+echo "Generado el: $(date)" >> "$REPORT_FILE"
+echo "========================================" >> "$REPORT_FILE"
+echo "" >> "$REPORT_FILE"
+
+# Función para agregar secciones limpias
+add_section() {
+    echo "" >> "$REPORT_FILE"
+    echo "----------------------------------------" >> "$REPORT_FILE"
+    echo "SECCIÓN: $1" >> "$REPORT_FILE"
+    echo "----------------------------------------" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
+}
+
+# 1. Identificación del Sistema y Placa Madre (DMI/SMBIOS)
+add_section "IDENTIFICACIÓN DEL SISTEMA"
+dmidecode -t system >> "$REPORT_FILE" 2>/dev/null
+
+# 2. Información de la BIOS/UEFI (Crucial para parches)
+add_section "INFORMACIÓN DE BIOS / UEFI"
+dmidecode -t bios >> "$REPORT_FILE" 2>/dev/null
+
+# 3. Información del Procesador (CPU completo)
+add_section "PROCESADOR (CPU)"
+lscpu >> "$REPORT_FILE" 2>/dev/null
+
+# 4. Memoria RAM (Detalles técnicos completos)
+add_section "MEMORIA RAM"
+dmidecode -t memory >> "$REPORT_FILE" 2>/dev/null 
+
+# 5. El BUS PCI (GPU, Wi-Fi, Audio, Chipset) - LO MÁS IMPORTANTE
+# Usamos -nnvv para extraer el reporte ultra-verborreico que necesita un desarrollador
+add_section "DISPOSITIVOS PCI (SUPER-VERBORREICO [VEN:DEV])"
+lspci -nnvv >> "$REPORT_FILE" 2>/dev/null
+
+# 6. Dispositivos de Almacenamiento (Discos y SSDs)
+add_section "ALMACENAMIENTO (DISCOS)"
+lsblk -o NAME,MODEL,SERIAL,SIZE,TYPE >> "$REPORT_FILE" 2>/dev/null
+
+# 7. Dispositivos USB
+add_section "DISPOSITIVOS USB (lsusb)"
+lsusb >> "$REPORT_FILE" 2>/dev/null
+
+echo "" >> "$REPORT_FILE"
+echo "========================================" >> "$REPORT_FILE"
+echo "REPORTE COMPLETADO CON ÉXITO." >> "$REPORT_FILE"
+echo "El reporte se guardó como: $(pwd)/$REPORT_FILE" >> "$REPORT_FILE"
+echo "========================================" >> "$REPORT_FILE"
+
+# Avisar al usuario en la terminal
+echo "¡Escaneo profundo completado!"
+echo "Tu reporte completo está aquí: $REPORT_FILE"
+echo "Ahora puedes copiar este archivo a otra USB o leerlo para saber qué hardware tienes."
