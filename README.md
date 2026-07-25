@@ -34,6 +34,5 @@ chmod +x Escáner-2
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/eyi3iyj3-svg/escanear-hardware.sh/main/Esc%C3%A1ner-2| bash
-```
 sudo bash && cat reporte_hardware_completo.txt
 ```
