@@ -12,3 +12,15 @@ Herramienta ultraligera de un solo clic que extrae la tabla completa de componen
    ```bash
 
 curl -sSL https://raw.githubusercontent.com/eyi3iyj3-svg/escanear-hardware.sh/main/escanear-hardware.sh | bash
+ 
+ # 🖥️ Escáner de Hardware "Bare Metal" para Computadoras Nuevas (o Viejas)
+
+Esta herramienta te permite extraer **toda** la información técnica de una laptop o computadora (incluyendo BIOS, códigos PCI de GPU, Wi-Fi, Audio y parches del Kernel), **incluso si al intentar instalar Windows o Linux la pantalla se queda negra o da error.**
+
+Está diseñado para que cualquier persona, sin conocimientos de informática, pueda crear una USB de diagnóstico que arranque SÍ O SÍ. Con este reporte en la mano, sabrás exactamente qué versión de Linux instalar o qué parches agregar para que tu computadora funcione perfectamente.
+
+---
+
+## 🛠️ Cómo Crear tu USB de Diagnóstico (Paso a Paso)
+
+Este proceso se realiza en otra computadora que funcione correctamente.
