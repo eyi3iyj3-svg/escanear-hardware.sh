@@ -15,7 +15,7 @@ chmod +x escanear-hardware.sh
 ### Automático
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/eyi3iyj3-svg/escanear-hardware.sh/main/escanear-hardware.sh| bash
+curl -sSL https://raw.githubusercontent.com/eyi3iyj3-svg/escanear-hardware.sh/main/escanear-hardware.sh | sudo bash && cat reporte_hardware_completo.txt
 ```
 
 ---
@@ -33,6 +33,5 @@ chmod +x Escáner-2
 ### Automático (Escáner 2)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/eyi3iyj3-svg/escanear-hardware.sh/main/Esc%C3%A1ner-2| bash
-sudo bash && cat reporte_hardware_completo.txt
+curl -sSL https://raw.githubusercontent.com/eyi3iyj3-svg/escanear-hardware.sh/main/Esc%C3%A1ner-2 | sudo bash && cat reporte_hardware_completo.txt
 ```
